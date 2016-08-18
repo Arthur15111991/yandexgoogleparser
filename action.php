@@ -1,5 +1,5 @@
 <?php
-
+	die('stop');
 
 	$post_text = $_POST['search_text'];
 
@@ -75,7 +75,7 @@
 	curl_setopt($curl, CURLOPT_POST, 1);
 	curl_setopt($curl, CURLOPT_POSTFIELDS, array ('text' => $post_text));
 	curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-	curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);  
+	curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 	$out = curl_exec($curl);
 	//Добавить проверку на getError
 
