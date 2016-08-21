@@ -13,27 +13,57 @@
 			$this->search = $_search;
 			$this->url = 'http://google.com/search?q=';
 			$this->responce = null;
-			$this->content = array();
+			$this->content = null;
 		}	
 
 		public function _parseResponce()
 		{
+			/*$temp_inner_data = file_get_contents('temp_file.html'); */
+
+
 			$dom = new DOMDocument();
 			$dom->loadHTML($this->responce);
-			$iterator = 0;
+
 			foreach($dom->getElementsByTagName('cite') as $link) {
-				if ($iterator > AMOUNT_OF_RESULTS) {
+		        echo $link->getAttribute('href');
+		        echo "<br />";
+			}
+
+
+			die('stop');
+
+			$dom = new DOMDocument;
+			$dom->loadHTML($this->responce);
+			$dom->preserveWhiteSpace = false;
+			$dom->saveHTML();
+
+			var_dump($dom);
+			die('stop');
+
+			$nodes = array();
+			$nodes = $dom->getElementsByTagName("div");
+			foreach ($nodes as $element) {
+				$current_class = $element->getAttribute("class");
+				if ($current_class == 'content__left') {
+					$iterator = 0;
+					$_nodes = $element->getElementsByTagName("a");
+					foreach ($_nodes as $key => $_value) {
+						$current_a_class = $_value->getAttribute("class");
+						if ($current_a_class == 'path organic__path' && $iterator < 5) {//path organic__path (каждый второй)
+							print_r($_value->getAttribute('href'));
+							echo "<br>";
+							$iterator++;
+						}
+					}
 					break;
 				}
-				$iterator++;
-				$this->content[] = $link->textContent;
 			}
 		}
 
 		public function _curlRequest()
 	    {
 			$curl = curl_init();
-			$search_string = $this->url . urlencode($this->search);
+			$search_string = $this->url . $this->search;
 			curl_setopt($curl, CURLOPT_URL, $search_string);
 			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
@@ -54,7 +84,7 @@
 	    	if (!empty($this->responce)) {
 	    		$this->_parseResponce();
 	    	}
-	    	return array($this->content, implode(', ', $this->errors));
+
 	    }
 
 

@@ -1,9 +1,11 @@
-<style>
-<?php include 'styles/style.css'; ?>
-</style>
 <?php
-    include_once('viewer.class.php');
-    include_once('config.php');
+
+	error_reporting(E_ALL);
+	ini_set('display_errors', 1);
+	define('DEVELOPMENT', true);
+
+
+	include_once('viewer.class.php');
 
 	Viewer::view('form');
 
@@ -18,15 +20,13 @@
 			$searcher = new Yandex($search_text);
 		}
 
-		list($links, $errors) = $searcher->_execute();
+		$links = $searcher->_execute();
 
-		if (empty($errors)) {
-			foreach ($links as $key => $link) {
-				Viewer::view('result_list', $link);
-			}
-		} else {
-			Viewer::view('result_list', $errors);
+
+		//$links = array('5', '1', '2', '3');
+
+		foreach ($links as $key => $link) {
+			Viewer::view('result_list', $link);
 		}
-		
-	}
 
+	}

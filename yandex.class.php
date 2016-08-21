@@ -1,9 +1,4 @@
 <?php
-
-	error_reporting(E_ALL);
-	ini_set('display_errors', 1);
-	define('DEVELOPMENT', true);
-
 	include_once('parser.class.php');
 
 	class Yandex extends Parser
@@ -12,65 +7,69 @@
 		private $url;
 		private $responce;
 		private $content;
+		private $errors;
 
 		public function __construct($_search)
 		{
 			$this->search = $_search;
 			$this->url = 'http://yandex.ru/search/';
+			$this->responce = null;
+			$this->content = null;
+			$this->errors = array();
 		}	
 
 		public function _parseResponce()
 		{
-			die('stop');
-			$temp_inner_data = file_get_contents('temp_file.html');
-			$dom = new DOMDocument;
-			$dom->loadHTML($temp_inner_data);
-			$dom->preserveWhiteSpace = false;
-			$dom->saveHTML();
-
-			$nodes = array();
-			$nodes = $dom->getElementsByTagName("div");
-			foreach ($nodes as $element) {
-				$current_class = $element->getAttribute("class");
-				if ($current_class == 'content__left') {
-					$iterator = 0;
-					$_nodes = $element->getElementsByTagName("a");
-					foreach ($_nodes as $key => $_value) {
-						$current_a_class = $_value->getAttribute("class");
-						if ($current_a_class == 'path organic__path' && $iterator < 5) {//path organic__path (каждый второй)
-							print_r($_value->getAttribute('href'));
-							echo "<br>";
-							$iterator++;
-						}
-					}
-					break;
-				}
-			}
+			//$string = file_get_contents('temp_file.html');
+			$this->responce = file_get_contents('temp_file.html');
+			$pattern = "/(link_cropped_no\" target=\"_blank\" href=\")(.{0,255})(\" )/i";
+			preg_match_all($pattern, $this->responce, $out);
+			print_r($out);
+			$this->content = $out['2'];
 		}
 
 		public function _curlRequest()
 	    {
 			$curl = curl_init();
-			curl_setopt($curl, CURLOPT_URL, $this->url);
+			$search_string = 'http://yandex.ru/search?text=' . urlencode($this->search);
+			curl_setopt($curl, CURLOPT_URL, $search_string);
 			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($curl, CURLOPT_POST, 1);
-			curl_setopt($curl, CURLOPT_POSTFIELDS, array ('text' => $this->search));
 			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-			$error = curl_error($curl);
-			$this->content = curl_exec($curl);
+			curl_setopt($curl, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+			$this->responce = curl_exec($curl);
+			$errors = curl_error($curl);
+			curl_close($curl);
 
-			if (!empty($error)) {
-	            return $error;
+			if (!empty($errors)) {
+	            $this->errors[] = $errors;
 	        }
-	        return $this->content;
+	        return $this->responce;
 	    }
 
-	    public function _getContent()
+	    public function _execute()
 	    {
-	    	return $this->content;
+	    	$this->_curlRequest();
+	    	if (!empty($this->responce)) {
+	    		if ($this->_issetSearchResult()) {
+	    			$this->_parseResponce();
+	    		}
+	    		return array($this->content, implode(', ', $this->errors));
+	    	} else {
+	    		$this->errors[] = 'No results';
+	    		return array($this->content, implode(', ', $this->errors));
+	    	}
 	    }
 
+	    public function _issetSearchResult()
+	    {
+	    	print_r($this->responce);
+	    	$pattern = "(action=\"/checkcaptcha)";
+	    	if (preg_match($pattern, $this->responce)) {
+	    		$this->errors[] = 'No results';
+	    		return false;
+	    	}
+	    	return true;
+	    }
 
 
 	}
